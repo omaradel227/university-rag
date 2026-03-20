@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+langchain
+langchain-community
+langchain-ollama
+langchain-text-splitters
+langchain-core
+langchain-huggingface
+chromadb
+sentence-transformers
+langdetect
+pymupdf
+pdfplumber
+easyocr
+pillow
+numpy<2.0
