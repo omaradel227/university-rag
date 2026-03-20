@@ -189,20 +189,6 @@ Arabic queries are also supported:
 
 ---
 
-## Performance
-
-Measured on Apple M2 8GB (CPU inference):
-
-| Metric | Value |
-|---|---|
-| Retrieval time | ~40-1600 ms |
-| LLM time (local Mac) | ~11,000 ms |
-| LLM time (Docker CPU) | ~65,000 ms |
-| Total chunks in store | 1,868 |
-| Documents indexed | 13 |
-
----
-
 ## Example Output
 ```
 Question: What are the admission requirements for the MSc program?
@@ -228,18 +214,49 @@ The admission requirements for the MSc program at Nile University include:
 8. Three recommendation letters.
 9. A Curriculum Vitae.
 
-Performance:
-  Language detected : English
-  Retrieval time    : 4496 ms
-  LLM time          : 10964 ms
-  Total time        : 15624 ms
-  Chunks retrieved  : 5
-  Context length    : 4045 chars
-  Answer length     : 916 chars
+
 ```
 
 ---
+## Performance
 
+Measured on Apple M2 8GB (CPU inference):
+
+| Metric | Value |
+|---|---|
+| Retrieval time | ~40-1600 ms |
+| LLM time (local Mac) | ~11,000 ms |
+| LLM time (Docker CPU) | ~65,000 ms |
+| Total chunks in store | 1,868 |
+| Documents indexed | 13 |
+
+---
+
+## Evaluation
+
+Evaluated on 20 questions — 10 manually written + 10 auto-generated from documents.
+Arabic and English questions both included.
+Judge model: qwen2.5:3b via Ollama (local).
+
+| Metric | Score | Description |
+|---|---|---|
+| Answer Relevancy | 0.8621 | Answers address the question asked |
+| Context Recall | 0.9000 | Retrieved chunks contain the needed information |
+| Faithfulness | n/a | Requires larger judge model (≥7b) |
+| Context Precision | n/a | Requires larger judge model (≥7b) |
+
+**Latency across 20 test questions:**
+
+| | Value |
+|---|---|
+| Average | 4,643 ms |
+| Min | 2,945 ms |
+| Max | 7,209 ms |
+
+> Note: Faithfulness and Context Precision metrics require an LLM judge with strong
+> instruction-following capability. qwen2.5:3b produces malformed responses for these
+> structured scoring tasks. Running evaluation with GPT-4o-mini would yield all 4 scores.
+---
 ## Known Limitations
 
 - LLM runs on CPU — responses take 10-65 seconds depending on environment
