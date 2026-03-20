@@ -6,17 +6,13 @@ from PIL import Image, ImageEnhance
 import io
 import numpy as np
 
-# ── Config ──────────────────────────────────────────────
 DOCUMENTS_DIR = "./documents"
 PROCESSED_DIR = "./processed"
 os.makedirs(PROCESSED_DIR, exist_ok=True)
 
-# ── EasyOCR readers (initialized once, reused across pages) ──
-# Lazy-loaded so we don't pay startup cost for text PDFs
 _readers = {}
 
 def get_reader(lang):
-    """Get or create an EasyOCR reader for the given language combo."""
     if lang not in _readers:
         print(f"  🔄 Loading EasyOCR model for: {lang} (first time only)...")
         if lang == "ara+eng":
@@ -27,7 +23,6 @@ def get_reader(lang):
             _readers[lang] = easyocr.Reader(['en'], gpu=False)
     return _readers[lang]
 
-# ── Document language map ────────────────────────────────
 DOCUMENT_LANGUAGES = {
     "EAS - PG Bylaws-2022 July - Stamped.pdf"                                         : "ara+eng",
     "MOT- PG Bylaws- Professional Master- March 2023 Stamped.pdf"                     : "eng",
@@ -44,19 +39,16 @@ DOCUMENT_LANGUAGES = {
     "اللائحة الداخلية لوحدة ضمان الجودة للكلية.pdf"                                 : "ara",
 }
 
-# Only truly scanned (image-only) PDFs
 SCANNED_DOCUMENTS = {
     "EAS - PG Bylaws-2022 July - Stamped.pdf",
     "MOT- PG Bylaws- Professional Master- March 2023 Stamped.pdf",
 }
 
-# ── Helper: Check if a page is scanned ──────────────────
 def is_scanned_page(page):
     text = page.get_text().strip()
     char_count = len([c for c in text if not c.isspace()])
     return char_count < 30
 
-# ── Helper: Preprocess image for OCR ────────────────────
 def preprocess_image(img):
     img = img.convert('L')
     enhancer = ImageEnhance.Contrast(img)
@@ -65,7 +57,6 @@ def preprocess_image(img):
     img = sharpener.enhance(2.0)
     return img
 
-# ── Helper: OCR a single page with EasyOCR ──────────────
 def ocr_page(page, lang="ara+eng"):
     # Render page to image at 300 DPI
     mat = fitz.Matrix(300/72, 300/72)
@@ -73,20 +64,14 @@ def ocr_page(page, lang="ara+eng"):
     img = Image.open(io.BytesIO(pix.tobytes("png")))
     img = preprocess_image(img)
 
-    # Convert PIL image to numpy array for EasyOCR
     img_array = np.array(img)
 
     reader = get_reader(lang)
 
-    # detail=0 returns just text strings
-    # paragraph=True groups nearby text into paragraphs
     results = reader.readtext(img_array, detail=1, paragraph=False)
 
-    # EasyOCR returns list of (bbox, text, confidence)
-    # Sort by vertical position (top to bottom) then horizontal (right to left for Arabic)
     results.sort(key=lambda r: (r[0][0][1], -r[0][0][0]))  # sort by y, then reverse x for RTL
 
-    # Filter low-confidence results and join
     lines = []
     for (bbox, text, confidence) in results:
         if confidence > 0.3 and text.strip():
@@ -94,7 +79,7 @@ def ocr_page(page, lang="ara+eng"):
 
     return "\n".join(lines)
 
-# ── Helper: Extract tables via pdfplumber ────────────────
+
 def extract_tables(pdf_path, page_num):
     tables_text = ""
     try:
@@ -110,10 +95,9 @@ def extract_tables(pdf_path, page_num):
                                 tables_text += " | ".join(clean_row) + "\n"
                         tables_text += "\n"
     except Exception as e:
-        print(f"    ⚠️  Table extraction error: {e}")
+        print(f"    Table extraction error: {e}")
     return tables_text.strip()
 
-# ── Main: Process a single PDF ──────────────────────────
 def process_pdf(pdf_path):
     filename   = os.path.basename(pdf_path)
     lang       = DOCUMENT_LANGUAGES.get(filename, "ara+eng")
@@ -147,12 +131,11 @@ def process_pdf(pdf_path):
     doc.close()
     return full_text
 
-# ── Main: Process all PDFs ──────────────────────────────
 def process_all_documents():
     pdf_files = [f for f in os.listdir(DOCUMENTS_DIR) if f.endswith(".pdf")]
 
     if not pdf_files:
-        print("❌ No PDF files found in ./documents/")
+        print("No PDF files found in ./documents/")
         return
 
     print(f"Found {len(pdf_files)} PDF files\n")
@@ -170,18 +153,18 @@ def process_all_documents():
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(text)
 
-            print(f"  ✅ Saved  → {out_name}")
-            print(f"  📊 {len(text):,} characters extracted")
+            print(f"  Saved  → {out_name}")
+            print(f"  {len(text):,} characters extracted")
             success += 1
 
         except Exception as e:
-            print(f"  ❌ Error  : {e}")
+            print(f"  Error  : {e}")
             failed.append(pdf_file)
 
     print(f"\n{'='*50}")
-    print(f"✅ Success : {success}/{len(pdf_files)}")
+    print(f"Success : {success}/{len(pdf_files)}")
     if failed:
-        print(f"❌ Failed  : {len(failed)}")
+        print(f"Failed  : {len(failed)}")
         for f in failed:
             print(f"    • {f}")
 
