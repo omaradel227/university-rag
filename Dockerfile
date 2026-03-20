@@ -17,10 +17,8 @@ COPY app.py .
 COPY rag_pipeline.py .
 COPY chroma_db/ ./chroma_db/
 
-# Copy embedding model from your Mac into the image
 COPY embedding_model/ ./embedding_model/
 
-# Copy Ollama model from your Mac into the image
 COPY ollama_models/ /root/.ollama/
 
 COPY start.sh .
